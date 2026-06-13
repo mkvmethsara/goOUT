@@ -4,6 +4,7 @@ package com.squadx.goout.Service;
 import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,6 +18,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     //Registering a brand-new traveler in the system.
     public User registerNewUser(User user){
