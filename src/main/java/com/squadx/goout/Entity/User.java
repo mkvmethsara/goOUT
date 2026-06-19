@@ -29,6 +29,7 @@ public class User {
     private String email;
     private String password;
     private String profileImageUrl;
+    private String travelerType;
 
     private LocalDateTime joinedDate = LocalDateTime.now();
 }
