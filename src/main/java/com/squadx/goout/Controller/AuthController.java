@@ -1,75 +1,57 @@
 package com.squadx.goout.Controller;
 
-
 import com.squadx.goout.Dto.LoginRequest;
 import com.squadx.goout.Entity.User;
+import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.JwtService;
-import com.squadx.goout.Service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-
-//Auto-injects UserService
 @RequiredArgsConstructor
-
 public class AuthController {
 
-    private final UserService userService;
-
-    //Endpoint for user registration
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user){
-        try{
-            //send the raw request data to Service
-            User savedUser = userService.registerNewUser(user);
-
-            //Return HTTP 201 Created status code with save user document
-            return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
-
-        } catch (RuntimeException e){
-            //If rules fail , return 404 Bad Request error message
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-
-    }
-
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request){
+    // 1. The NEW Register Endpoint
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody User user) {
 
-        Optional<User> userOptional = userService.getUserByEmail(request.getEmail());
+        // Scramble the password before saving it to MongoDB!
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        if (userOptional.isEmpty()){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: User not found.");
-        }
+        // Save the user
+        userRepository.save(user);
 
-        User user = userOptional.get();
+        // Generate a token for the new user
+        String jwtToken = jwtService.generateToken(user.getEmail());
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error: Invalid password.");
-        }
-
-        String token = jwtService.generateToken(user.getEmail());
-
-        Map<String, String> response = new HashMap<>();
-        response.put("token", token);
-        response.put("massage", "Login successful!");
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(jwtToken);
     }
 
+    // 2. The Existing Login Endpoint
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+
+        // Verify the email and password
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        // Generate a token
+        String jwtToken = jwtService.generateToken(request.getEmail());
+
+        return ResponseEntity.ok(jwtToken);
+    }
 }
