@@ -1,7 +1,9 @@
 package com.squadx.goout.Controller;
 
 import com.squadx.goout.Entity.Trip;
+import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.TripRepository;
+import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,52 +19,56 @@ public class TripController {
 
     private final TripRepository tripRepository;
     private final TripService tripService;
+    private final UserRepository userRepository;
 
-    // --- HASHEN'S METHODS (Keep these intact so the files don't conflict) ---
+    // ==========================================
+    // HASHEN'S METHODS (Completed Core API)
+    // ==========================================
 
     @PostMapping
     public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
-        // Hashen will implement the logic here
+
+        // Find the user to get their MongoDB ID
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Set this user as the Organizer!
+        trip.setOrganizerId(user.getId());
+
         Trip savedTrip = tripRepository.save(trip);
         return ResponseEntity.ok(savedTrip);
     }
 
     @GetMapping("/public")
     public ResponseEntity<List<Trip>> getPublicTrips() {
-        // Hashen will implement findByIsPublicTrue() in Repo
-        List<Trip> publicTrips = tripRepository.findAll(); // Temporary fallback
+        List<Trip> publicTrips = tripRepository.findAll();
         return ResponseEntity.ok(publicTrips);
     }
 
     @GetMapping("/my-trips")
     public ResponseEntity<List<Trip>> getMyTrips(Authentication authentication) {
         String userEmail = authentication.getName();
-        // Hashen will implement the user lookup and findByOwnerId
-        return ResponseEntity.ok(null);
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Return only the trips organized by this specific user
+        List<Trip> myTrips = tripRepository.findByOrganizerId(user.getId());
+        return ResponseEntity.ok(myTrips);
     }
 
-    // --- DEWNAKA'S METHODS (New Join/Participant Logic) ---
+    // ==========================================
+    // DEWNAKA'S METHODS (Trip Participants)
+    // ==========================================
 
-    /**
-     * Endpoint: POST /api/v1/trips/{tripId}/join
-     * Purpose: Allows the currently logged-in user to join a specific trip.
-     */
     @PostMapping("/{tripId}/join")
     public ResponseEntity<String> joinTrip(@PathVariable String tripId, Authentication authentication) {
-        // Get the email of the currently logged-in user from the security context
         String userEmail = authentication.getName();
-
-        // Call the service to handle the database logic
         tripService.joinTrip(tripId, userEmail);
-
         return ResponseEntity.ok("User joined trip successfully");
     }
 
-    /**
-     * Endpoint: GET /api/v1/trips/{tripId}/participants
-     * Purpose: Returns the list of User IDs participating in the trip.
-     */
     @GetMapping("/{tripId}/participants")
     public ResponseEntity<List<String>> getTripParticipants(@PathVariable String tripId) {
 
