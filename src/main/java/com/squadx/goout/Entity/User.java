@@ -30,6 +30,9 @@ public class User {
     private String password;
     private String profileImageUrl;
     private String travelerType;
+    private String bio;
+    private String location;
+    private String avatarUrl;
 
     private LocalDateTime joinedDate = LocalDateTime.now();
 }
