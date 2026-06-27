@@ -62,7 +62,19 @@ public class TripService {
         // Loop through the pending IDs, look up the User in MongoDB, and convert them to a DTO!
         return trip.getPendingJoinRequests().stream()
                 .map(userId -> userRepository.findById(userId)
-                        .map(u -> new UserSummaryDto(u.getId(), u.getFirstName() + " " + u.getLastName(), u.getEmail()))
+                        .map(u -> {
+                            // Safely handle null names from older database records!
+                            String fName = u.getFirstName() != null ? u.getFirstName() : "";
+                            String lName = u.getLastName() != null ? u.getLastName() : "";
+                            String fullName = (fName + " " + lName).trim();
+
+                            // If both were missing, fall back to a nice default instead of empty space
+                            if (fullName.isEmpty()) {
+                                fullName = "Traveler";
+                            }
+
+                            return new UserSummaryDto(u.getId(), fullName, u.getEmail());
+                        })
                         .orElse(new UserSummaryDto(userId, "Unknown User", "Unknown Email")))
                 .collect(Collectors.toList());
     }
