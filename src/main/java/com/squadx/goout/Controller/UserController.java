@@ -63,6 +63,10 @@ public class UserController {
         if (updateDto.getLocation() != null) {
             currentUser.setLocation(updateDto.getLocation());
         }
+        // ADDED: Check and update the avatar URL if Vishwa sends it!
+        if (updateDto.getAvatarUrl() != null) {
+            currentUser.setAvatarUrl(updateDto.getAvatarUrl());
+        }
 
         // 3. Save the changes to MongoDB
         userRepository.save(currentUser);

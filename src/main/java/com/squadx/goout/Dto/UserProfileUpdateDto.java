@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class UserProfileUpdateDto {
     private String bio;
     private String location;
+    private String avatarUrl; // ADDED: Catcher for the new profile picture URL!
 }
