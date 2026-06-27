@@ -1,6 +1,5 @@
 package com.squadx.goout.Entity;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "trips")
-
 public class Trip {
 
     @Id
@@ -23,10 +21,10 @@ public class Trip {
 
     private String title;
     private String description;
-    private String destinations;
+    private String destinations; // Plural
     private String imageUrl;
 
-    private LocalDate stratDate;
+    private LocalDate startDate; // FIXED TYPO: changed from stratDate
     private LocalDate endDate;
 
     private double minBudget;
@@ -35,7 +33,12 @@ public class Trip {
 
     private String organizerId;
 
+    // The Official Members
     private List<String> participantIds = new ArrayList<>();
+
+    // 🚨 NEW: The Waiting Room 🚨
+    private List<String> pendingJoinRequests = new ArrayList<>();
+
 
     private String status = "ACTIVE";
 }
