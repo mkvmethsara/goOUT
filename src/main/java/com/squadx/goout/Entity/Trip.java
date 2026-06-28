@@ -43,6 +43,9 @@ public class Trip {
 
     private String status = "ACTIVE";
 
+    // 🚨 NEW: Added so Spring Boot can run findByIsPublicTrue() without crashing!
+    private boolean isPublic = true; // Defaulting to true so they show up on the Discover page
+
     // 🚨 NEW: Not saved in DB, but passed to React to solve Vishwa's issue!
     @Transient
     @JsonProperty("isOrganizer")
