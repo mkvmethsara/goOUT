@@ -1,5 +1,6 @@
 package com.squadx.goout.Controller;
 
+import com.squadx.goout.Dto.TripResponseDto;
 import com.squadx.goout.Entity.Trip;
 import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.TripRepository;
@@ -7,12 +8,11 @@ import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/trips")
@@ -20,40 +20,51 @@ import java.util.stream.Collectors;
 public class TripController {
 
     private final TripRepository tripRepository;
-    private final TripService tripService;
     private final UserRepository userRepository;
-
-    // ==========================================
-    // CORE TRIP API
-    // ==========================================
+    private final TripService tripService;
 
     @PostMapping
     public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
+
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // FIXED: Using organizerId instead of Hashen's broken ownerId
         trip.setOrganizerId(user.getId());
+
         Trip savedTrip = tripRepository.save(trip);
         return ResponseEntity.ok(savedTrip);
     }
 
+    // RESTORED: Your Trip Details logic that got overwritten!
+    @GetMapping("/{id}")
+    public ResponseEntity<TripResponseDto> getTripDetails(@PathVariable String id) {
+        Trip trip = tripRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        List<TripResponseDto.TripMemberDto> populatedMembers = new ArrayList<>();
+        for (String userId : trip.getParticipantIds()) {
+            userRepository.findById(userId).ifPresent(user -> {
+                populatedMembers.add(new TripResponseDto.TripMemberDto(
+                        user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()
+                ));
+            });
+        }
+
+        TripResponseDto responseDto = new TripResponseDto(
+                trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
+                trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
+                trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
+                trip.getStatus(), populatedMembers
+        );
+        return ResponseEntity.ok(responseDto);
+    }
+
     @GetMapping("/public")
-    public ResponseEntity<List<Trip>> getPublicTrips(Authentication authentication) {
-        // Find the current user
-        String userEmail = authentication.getName();
-        User currentUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Get ALL trips
-        List<Trip> allTrips = tripRepository.findAll();
-
-        // Filter out trips where the current user is the organizer
-        List<Trip> discoverFeed = allTrips.stream()
-                .filter(trip -> !currentUser.getId().equals(trip.getOrganizerId()))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(discoverFeed);
+    public ResponseEntity<List<Trip>> getPublicTrips() {
+        List<Trip> publicTrips = tripRepository.findByIsPublicTrue();
+        return ResponseEntity.ok(publicTrips);
     }
 
     @GetMapping("/my-trips")
@@ -62,29 +73,23 @@ public class TripController {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<Trip> myTrips = tripRepository.findByOrganizerId(user.getId());
-        return ResponseEntity.ok(myTrips);
-    }
+        String userId = user.getId();
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTrip(@PathVariable String id, Authentication authentication) {
-        String userEmail = authentication.getName();
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<Trip> organizedTrips = tripRepository.findByOrganizerId(userId);
+        organizedTrips.forEach(trip -> trip.setOrganizer(true));
 
-        Trip trip = tripRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Trip not found"));
+        List<Trip> joinedTrips = tripRepository.findByParticipantIdsContaining(userId);
+        joinedTrips.forEach(trip -> trip.setOrganizer(false));
 
-        if (!trip.getOrganizerId().equals(user.getId())) {
-            throw new AccessDeniedException("You are not authorized to delete this trip!");
-        }
+        List<Trip> allMyTrips = new ArrayList<>();
+        allMyTrips.addAll(organizedTrips);
+        allMyTrips.addAll(joinedTrips);
 
-        tripRepository.deleteById(id);
-        return ResponseEntity.ok("Trip deleted successfully");
+        return ResponseEntity.ok(allMyTrips);
     }
 
     // ==========================================
-    // JOIN REQUESTS & WAITING ROOM API
+    // JOIN REQUESTS & WAITING ROOM API (RESTORED)
     // ==========================================
 
     // 1. User clicks "Join" on the Discover page
@@ -95,7 +100,7 @@ public class TripController {
         return ResponseEntity.ok("Join request sent to the organizer!");
     }
 
-    // 2. Admin views their waiting room (UPDATED)
+    // 2. Admin views their waiting room
     @GetMapping("/{tripId}/requests")
     public ResponseEntity<List<com.squadx.goout.Dto.UserSummaryDto>> getPendingRequests(@PathVariable String tripId, Authentication authentication) {
         String adminEmail = authentication.getName();
@@ -122,7 +127,6 @@ public class TripController {
     public ResponseEntity<List<String>> getTripParticipants(@PathVariable String tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
-
         return ResponseEntity.ok(trip.getParticipantIds());
     }
 }

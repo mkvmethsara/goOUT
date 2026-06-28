@@ -33,12 +33,19 @@ public class PostService {
         return postRepository.save(newPost);
     }
 
-    public List<PostResponseDto> getFeed() {
+    // UPDATED: We now accept the current user's email so we can calculate 'isLikedByCurrentUser'
+    public List<PostResponseDto> getFeed(String currentUserEmail) {
+
+        // Find out who is scrolling the feed
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String currentUserId = currentUser.getId();
+
         // 1. Fetch all posts from DB, sorted newest first!
         List<Post> allPosts = postRepository.findAllByOrderByCreatedAtDesc();
         List<PostResponseDto> feedResponse = new ArrayList<>();
 
-        // 2. Loop through every post and attach the Author's details
+        // 2. Loop through every post and attach the Author's details and Like details
         for (Post post : allPosts) {
             Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
 
@@ -58,6 +65,10 @@ public class PostService {
                 avatarUrl = u.getAvatarUrl();
             }
 
+            // ADDED: Calculate the Like metrics!
+            int likeCount = (post.getLikedBy() != null) ? post.getLikedBy().size() : 0;
+            boolean isLiked = (post.getLikedBy() != null) && post.getLikedBy().contains(currentUserId);
+
             PostResponseDto.AuthorDto authorDto = new PostResponseDto.AuthorDto(authorName, avatarUrl);
 
             PostResponseDto dto = new PostResponseDto(
@@ -66,6 +77,8 @@ public class PostService {
                     post.getLocation(),
                     post.getImageUrl(),
                     post.getCreatedAt(),
+                    likeCount, // Included here!
+                    isLiked,   // Included here!
                     authorDto
             );
 
@@ -73,5 +86,28 @@ public class PostService {
         }
 
         return feedResponse;
+    }
+
+    // ADDED: The logic to Like or Unlike a post
+    public void toggleLike(String postId, String userEmail) {
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // Failsafe: Ensure the list exists
+        if (post.getLikedBy() == null) {
+            post.setLikedBy(new ArrayList<>());
+        }
+
+        // The Toggle Logic: If they already liked it, remove them. Otherwise, add them.
+        if (post.getLikedBy().contains(currentUser.getId())) {
+            post.getLikedBy().remove(currentUser.getId());
+        } else {
+            post.getLikedBy().add(currentUser.getId());
+        }
+
+        postRepository.save(post);
     }
 }

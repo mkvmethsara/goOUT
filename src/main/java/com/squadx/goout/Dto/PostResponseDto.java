@@ -16,6 +16,10 @@ public class PostResponseDto {
     private String imageUrl;
     private LocalDateTime createdAt;
 
+    // ADDED: The new Like fields requested by frontend
+    private int likeCount;
+    private boolean isLikedByCurrentUser;
+
     private AuthorDto author;
 
     @Data

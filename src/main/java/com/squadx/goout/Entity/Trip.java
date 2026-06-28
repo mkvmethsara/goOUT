@@ -5,12 +5,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Transient;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.data.annotation.Transient;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 @NoArgsConstructor
@@ -26,7 +27,11 @@ public class Trip {
     private String destinations;
     private String imageUrl;
 
+    // 🚨 ADD THESE TWO ANNOTATIONS to fix the Date parsing error!
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
     private double minBudget;
@@ -38,15 +43,15 @@ public class Trip {
     // The Official Members
     private List<String> participantIds = new ArrayList<>();
 
-    // 🚨 NEW: The Waiting Room 🚨
+    // The Waiting Room
     private List<String> pendingJoinRequests = new ArrayList<>();
 
     private String status = "ACTIVE";
 
-    // 🚨 NEW: Added so Spring Boot can run findByIsPublicTrue() without crashing!
-    private boolean isPublic = true; // Defaulting to true so they show up on the Discover page
+    // Helps us find public trips for the Discover feed
+    private boolean isPublic = true;
 
-    // 🚨 NEW: Not saved in DB, but passed to React to solve Vishwa's issue!
+    // Not saved in DB, but passed to React for UI categorization
     @Transient
     @JsonProperty("isOrganizer")
     private boolean isOrganizer;

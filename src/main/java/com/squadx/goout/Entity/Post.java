@@ -7,6 +7,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -25,4 +27,7 @@ public class Post {
     private String authorId;
 
     private LocalDateTime createdAt;
+
+    // ADDED: List of User IDs who liked this post
+    private List<String> likedBy = new ArrayList<>();
 }

@@ -24,9 +24,19 @@ public class PostController {
         return ResponseEntity.ok(savedPost);
     }
 
+    // UPDATED: Now requires Authentication so we know who is asking for the feed!
     @GetMapping
-    public ResponseEntity<List<PostResponseDto>> getFeed() {
-        List<PostResponseDto> feedResponse = postService.getFeed();
+    public ResponseEntity<List<PostResponseDto>> getFeed(Authentication authentication) {
+        String userEmail = authentication.getName();
+        List<PostResponseDto> feedResponse = postService.getFeed(userEmail);
         return ResponseEntity.ok(feedResponse);
+    }
+
+    // ADDED: The Toggle Like Endpoint
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<String> toggleLike(@PathVariable String postId, Authentication authentication) {
+        String userEmail = authentication.getName();
+        postService.toggleLike(postId, userEmail);
+        return ResponseEntity.ok("Post like status toggled");
     }
 }
