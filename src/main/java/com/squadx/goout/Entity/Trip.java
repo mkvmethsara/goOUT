@@ -9,6 +9,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.data.annotation.Transient;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 @NoArgsConstructor
@@ -21,10 +23,10 @@ public class Trip {
 
     private String title;
     private String description;
-    private String destinations; // Plural
+    private String destinations;
     private String imageUrl;
 
-    private LocalDate startDate; // FIXED TYPO: changed from stratDate
+    private LocalDate startDate;
     private LocalDate endDate;
 
     private double minBudget;
@@ -39,6 +41,10 @@ public class Trip {
     // 🚨 NEW: The Waiting Room 🚨
     private List<String> pendingJoinRequests = new ArrayList<>();
 
-
     private String status = "ACTIVE";
+
+    // 🚨 NEW: Not saved in DB, but passed to React to solve Vishwa's issue!
+    @Transient
+    @JsonProperty("isOrganizer")
+    private boolean isOrganizer;
 }
