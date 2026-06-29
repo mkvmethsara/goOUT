@@ -37,6 +37,27 @@ public class TripController {
         return ResponseEntity.ok(savedTrip);
     }
 
+    // NEW: Endpoint for the Organizer to end a trip
+    @PatchMapping("/{tripId}/complete")
+    public ResponseEntity<Trip> completeTrip(@PathVariable String tripId, Authentication authentication) {
+        String userEmail = authentication.getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        // SECURITY: Only the organizer can end the trip
+        if (!trip.getOrganizerId().equals(user.getId())) {
+            throw new RuntimeException("Only the trip organizer can end this trip!");
+        }
+
+        trip.setStatus("COMPLETED");
+        Trip savedTrip = tripRepository.save(trip);
+
+        return ResponseEntity.ok(savedTrip);
+    }
+
     // RESTORED: Your Trip Details logic that got overwritten!
     @GetMapping("/{id}")
     public ResponseEntity<TripResponseDto> getTripDetails(@PathVariable String id) {
@@ -76,10 +97,10 @@ public class TripController {
         String userId = user.getId();
 
         List<Trip> organizedTrips = tripRepository.findByOrganizerId(userId);
-        organizedTrips.forEach(trip -> trip.setOrganizer(true));
+        organizedTrips.forEach(trip -> trip.setIsOrganizer(true)); // <-- Added "Is" here
 
         List<Trip> joinedTrips = tripRepository.findByParticipantIdsContaining(userId);
-        joinedTrips.forEach(trip -> trip.setOrganizer(false));
+        joinedTrips.forEach(trip -> trip.setIsOrganizer(false)); // <-- Added "Is" here
 
         List<Trip> allMyTrips = new ArrayList<>();
         allMyTrips.addAll(organizedTrips);

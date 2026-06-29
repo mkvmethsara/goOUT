@@ -27,16 +27,17 @@ public class Trip {
     private String destinations;
     private String imageUrl;
 
-    // 🚨 ADD THESE TWO ANNOTATIONS to fix the Date parsing error!
+    // Bulletproofing date parsing from React!
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
-    private double minBudget;
-    private double maxBudget;
-    private int maxParticipants;
+    // 🚨 UPGRADED to Wrapper classes (Double/Integer) so Jackson accepts 'null' safely!
+    private Double minBudget;
+    private Double maxBudget;
+    private Integer maxParticipants;
 
     private String organizerId;
 
@@ -46,13 +47,14 @@ public class Trip {
     // The Waiting Room
     private List<String> pendingJoinRequests = new ArrayList<>();
 
-    private String status = "ACTIVE";
+    // 🚨 UPDATED: Default to UPCOMING for the new frontend feed tabs!
+    private String status = "UPCOMING";
 
-    // Helps us find public trips for the Discover feed
-    private boolean isPublic = true;
+    // 🚨 UPGRADED to Boolean object to prevent null-mapping crashes!
+    private Boolean isPublic = true;
 
-    // Not saved in DB, but passed to React for UI categorization
+    // UPGRADED to Boolean object
     @Transient
     @JsonProperty("isOrganizer")
-    private boolean isOrganizer;
+    private Boolean isOrganizer;
 }
