@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; // 🌟 ADDED: We need this to return the array of expenses!
 import java.util.Map;
 
 @RestController
@@ -16,22 +17,7 @@ public class ExpenseController {
 
     private final ExpenseService expenseService;
 
-    /**
-     * Endpoint 1: Add a New Receipt
-     * URL: POST http://localhost:8080/api/expenses
-     * Frontend Team Goal: When a user clicks "Add Expense" on the Figma form, send the JSON here.
-     */
-    @PostMapping
-    public ResponseEntity<Expense> createExpense(@RequestBody Expense expense) {
-        Expense savedExpense = expenseService.addExpense(expense);
-        return new ResponseEntity<>(savedExpense, HttpStatus.CREATED);
-    }
-
-    /**
-     * Endpoint 2: Get the Dashboard Math
-     * URL: GET http://localhost:8080/api/expenses/trip/{tripId}/dashboard
-     * Frontend Team Goal: Call this URL when the page loads to get the Total Cost and Per Person averages.
-     */
+    // 2. Get Dashboard Data (Math Engine)
     @GetMapping("/trip/{tripId}/dashboard")
     public ResponseEntity<Map<String, Object>> getTripDashboardData(@PathVariable String tripId) {
         try {
@@ -40,5 +26,16 @@ public class ExpenseController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
+    }
+
+    /**
+     * Endpoint 3: Get the Trip Ledger (MVP Phase 1)
+     * URL: GET http://localhost:8080/api/v1/expenses/trip/{tripId}
+     * Frontend Team Goal: Fetch all expenses for a specific trip to display in the list.
+     */
+    @GetMapping("/trip/{tripId}")
+    public ResponseEntity<List<Expense>> getTripLedger(@PathVariable String tripId) {
+        List<Expense> ledger = expenseService.getAllExpensesForTrip(tripId);
+        return ResponseEntity.ok(ledger);
     }
 }
