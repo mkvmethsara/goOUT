@@ -1,6 +1,5 @@
 package com.squadx.goout.Entity;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,15 +8,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-//Auto generates getters and setters
+// Auto generates getters and setters
 @Data
-
-//Create empty Con
+// Create empty Con
 @NoArgsConstructor
-
-//Crate Con with all fields
+// Create Con with all fields
 @AllArgsConstructor
-
 @Document(collection = "users")
 public class User {
 
@@ -35,4 +31,8 @@ public class User {
     private String avatarUrl;
 
     private LocalDateTime joinedDate = LocalDateTime.now();
+
+    // 🌟 NEW: Email Verification Fields
+    private Boolean isVerified = false; // Defaults to false when they sign up!
+    private String otp;
 }

@@ -24,4 +24,6 @@ public interface TripRepository extends MongoRepository<Trip, String> {
 
     // Finds all trips marked as public for the discovery feed
     List<Trip> findByIsPublicTrue();
+    // 🌟 NEW: For Vishwa's "Upcoming Adventures" global feed!
+    List<Trip> findByIsPublicTrueAndStatus(String status);
 }

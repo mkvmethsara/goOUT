@@ -24,7 +24,10 @@ public class TripResponseDto {
     private String organizerId;
     private String status;
 
-    // The fully populated list of members Vishwa asked for!
+    // 🌟 ADDED: The full organizer details for Vishwa's feed!
+    private TripMemberDto organizer;
+
+    // The fully populated list of members
     private List<TripMemberDto> joinedMembers;
 
     /**

@@ -36,11 +36,17 @@ public class TripController {
         return ResponseEntity.ok(savedTrip);
     }
 
-    // 2. Complete a trip (Delegated to Service)
+    // 🌟 NEW: The Global Feed now returns rich DTOs instead of raw Entities!
+    @GetMapping
+    public ResponseEntity<List<TripResponseDto>> getGlobalUpcomingFeed() {
+        List<TripResponseDto> feed = tripService.getGlobalUpcomingFeed();
+        return ResponseEntity.ok(feed);
+    }
+
+    // 2. Complete a trip
     @PatchMapping("/{tripId}/complete")
     public ResponseEntity<Trip> completeTrip(@PathVariable String tripId, Authentication authentication) {
         String userEmail = authentication.getName();
-        // The Service handles all the heavy lifting and the Social Post creation now!
         Trip completedTrip = tripService.completeTrip(tripId, userEmail);
         return ResponseEntity.ok(completedTrip);
     }
@@ -60,11 +66,22 @@ public class TripController {
             });
         }
 
+        // Grab the organizer's details for the detailed view too!
+        User org = userRepository.findById(trip.getOrganizerId()).orElse(null);
+        TripResponseDto.TripMemberDto organizerDto = null;
+        if (org != null) {
+            organizerDto = new TripResponseDto.TripMemberDto(
+                    org.getId(), org.getFirstName(), org.getLastName(), org.getAvatarUrl()
+            );
+        }
+
         TripResponseDto responseDto = new TripResponseDto(
                 trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
                 trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                 trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
-                trip.getStatus(), populatedMembers
+                trip.getStatus(),
+                organizerDto, // <-- Added here to match the new DTO!
+                populatedMembers
         );
         return ResponseEntity.ok(responseDto);
     }
