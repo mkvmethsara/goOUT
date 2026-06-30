@@ -29,6 +29,12 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
+    // 🌟 NEW: Fetch the basic ledger for Phase 1 MVP
+    public List<Expense> getAllExpensesForTrip(String tripId) {
+        // Our repository already has this method from when we built the Math Engine!
+        return expenseRepository.findByTripId(tripId);
+    }
+
     // 2. The Math Engine for the Figma Dashboard
     public Map<String, Object> getTripExpenseDashboard(String tripId) {
 
@@ -77,13 +83,12 @@ public class ExpenseService {
 
         for (Expense expense : tripExpenses) {
             // IMPORTANT: Assuming the variable in Expense.java is named 'userId'.
-            String payerId = expense.getId();
+            String payerId = expense.getUserId();
 
-            if (amountPaidPerUser.containsKey(payerId)) {
-                BigDecimal currentPaid = amountPaidPerUser.get(payerId);
-                // FIXED: Convert double to BigDecimal for the addition
-                amountPaidPerUser.put(payerId, currentPaid.add(BigDecimal.valueOf(expense.getAmount())));
-            }
+            // Tech Lead optimization: Using modern Java's computeIfPresent to replace 4 lines with 1!
+            amountPaidPerUser.computeIfPresent(payerId,
+                    (key, currentPaid) -> currentPaid.add(BigDecimal.valueOf(expense.getAmount()))
+            );
         }
 
         List<UserBalance> balances = new ArrayList<>();
