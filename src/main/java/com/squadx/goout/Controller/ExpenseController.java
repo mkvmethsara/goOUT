@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List; // 🌟 ADDED: We need this to return the array of expenses!
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -16,6 +16,13 @@ import java.util.Map;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+
+    // 1. Add a New Expense (The one we just fixed!)
+    @PostMapping
+    public ResponseEntity<Expense> createExpense(@RequestBody Expense expense) {
+        Expense savedExpense = expenseService.addExpense(expense);
+        return ResponseEntity.ok(savedExpense);
+    }
 
     // 2. Get Dashboard Data (Math Engine)
     @GetMapping("/trip/{tripId}/dashboard")
@@ -37,5 +44,14 @@ public class ExpenseController {
     public ResponseEntity<List<Expense>> getTripLedger(@PathVariable String tripId) {
         List<Expense> ledger = expenseService.getAllExpensesForTrip(tripId);
         return ResponseEntity.ok(ledger);
+    }
+
+    // 🌟 ADDED BACK: 4. Calculate Settlements (Methsara's Math Engine)
+    @PostMapping("/trip/{tripId}/settle")
+    public ResponseEntity<List<com.squadx.goout.Dto.Transfer>> settleTrip(
+            @PathVariable String tripId,
+            @RequestBody List<String> participantIds) {
+
+        return ResponseEntity.ok(expenseService.calculateSettlementsForTrip(tripId, participantIds));
     }
 }
