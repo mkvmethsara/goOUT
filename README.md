@@ -1,12 +1,12 @@
-#GoOUT - Backend API (Spring Boot)
+# GoOUT - Backend API (Spring Boot)
 
 Welcome to the backend repository for GoOUT, a collaborative travel planning and expense settlement platform. This RESTful API serves as the core engine for the application, handling everything from secure user authentication to complex debt-settlement mathematics.
 
-# Team & Contributions (Pod 2 - Backend)
+# Team & Contributions (Backend)
 
 This API was built collaboratively using a strictly organized branch-and-merge Git workflow. Below is the breakdown of individual contributions:
 
-# Methsara (Tech Lead / Core Architecture)
+# Methsara (Core Architecture)
 
 *Engineered the overall Spring Boot architecture and MongoDB database schemas.
 
