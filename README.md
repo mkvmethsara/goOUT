@@ -1,12 +1,12 @@
-🌍 GoOUT - Backend API (Spring Boot)
+ GoOUT - Backend API (Spring Boot)
 
 Welcome to the backend repository for GoOUT, a collaborative travel planning and expense settlement platform. This RESTful API serves as the core engine for the application, handling everything from secure user authentication to complex debt-settlement mathematics.
 
-👥 Team & Contributions (Pod 2 - Backend)
+Team & Contributions (Pod 2 - Backend)
 
 This API was built collaboratively using a strictly organized branch-and-merge Git workflow. Below is the breakdown of individual contributions:
 
-👑 Methsara (Tech Lead / Core Architecture)
+Methsara (Tech Lead / Core Architecture)
 
 Engineered the overall Spring Boot architecture and MongoDB database schemas.
 
@@ -20,7 +20,7 @@ Designed the GlobalExceptionHandler (RFC 7807 Standard) for unified frontend err
 
 Conducted code reviews, branch resets, and final merge conflict resolutions.
 
-💻 Hashen (Trip Core API)
+ Hashen (Trip Core API)
 
 Built the core Trip CRUD operations (TripController).
 
@@ -28,7 +28,7 @@ Engineered the MongoDB custom queries (TripRepository) for the Public Discovery 
 
 Implemented the "My Trips" dashboard logic, filtering trips by ownerId and visibility.
 
-💻 Udai (Expense API Routing)
+Udai (Expense API Routing)
 
 Developed the RESTful endpoints for the Expense module (ExpenseController).
 
@@ -36,7 +36,7 @@ Integrated the Tech Lead's Math Engine to expose the Dashboard and Ledger calcul
 
 Handled JSON payload mappings for receipt creation.
 
-💻 Dewnaka (Trip Participant Management)
+Dewnaka (Trip Participant Management)
 
 Developed the logic for users joining existing trips (TripService).
 
@@ -44,9 +44,7 @@ Managed MongoDB array operations to safely push User IDs into the Trip participa
 
 Built the endpoints to fetch and display active trip members.
 
-🏗️ Architecture & Best Practices
-
-To ensure enterprise-level code quality, our team adhered to the following standards:
+ Architecture & Best Practices
 
 Service-Controller-Repository Pattern: Strict separation of concerns. Controllers handle HTTP, Services handle business logic, and Repositories handle MongoDB.
 
@@ -56,7 +54,7 @@ Stateless Authentication: Session management is strictly stateless, relying enti
 
 CORS Configuration: Explicitly configured WebMvcConfigurer to allow preflight OPTIONS requests and seamless integration with the Vite/React frontend.
 
-🚀 How to Run Locally
+ How to Run Locally
 
 1. Prerequisites
 
@@ -89,12 +87,11 @@ mvn spring-boot:run
 
 The server will initialize on http://localhost:8080.
 
-🧪 API Testing (Postman)
+ API Testing (Postman)
 
-The complete suite of API endpoints has been fully tested and documented.
-To evaluate the endpoints:
+The complete suite of API endpoints has been fully tested and documented. To evaluate the endpoints:
 
-Locate the GoOUT_API_Final_Project.json file included in the root directory (or docs folder) of this repository.
+Locate the GoOUT_API_Final_Project.json file included in the root directory.
 
 Open Postman and click Import.
 
