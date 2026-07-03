@@ -23,8 +23,9 @@ public class TripController {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripService tripService;
+    // 🗑️ REMOVED PostRepository because we don't need Auto-Posts anymore!
 
-    // 1. Create a new trip
+    // 1. Create a new trip (Cleaned up: No more Auto-Posts)
     @PostMapping
     public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
@@ -32,14 +33,20 @@ public class TripController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         trip.setOrganizerId(user.getId());
+
+        // 🌟 THE FIX: We must actually save the trip to MongoDB!
         Trip savedTrip = tripRepository.save(trip);
+
         return ResponseEntity.ok(savedTrip);
     }
 
-    // 🌟 NEW: The Global Feed now returns rich DTOs instead of raw Entities!
+    // 🌟 UPDATED: The Global Feed now takes an optional 'search' parameter!
     @GetMapping
-    public ResponseEntity<List<TripResponseDto>> getGlobalUpcomingFeed() {
-        List<TripResponseDto> feed = tripService.getGlobalUpcomingFeed();
+    public ResponseEntity<List<TripResponseDto>> getGlobalUpcomingFeed(
+            @RequestParam(required = false) String search,
+            Authentication authentication) {
+        String userEmail = authentication.getName();
+        List<TripResponseDto> feed = tripService.getGlobalUpcomingFeed(userEmail, search);
         return ResponseEntity.ok(feed);
     }
 
@@ -53,20 +60,25 @@ public class TripController {
 
     // 3. Get detailed view of a single trip
     @GetMapping("/{id}")
-    public ResponseEntity<TripResponseDto> getTripDetails(@PathVariable String id) {
+    public ResponseEntity<TripResponseDto> getTripDetails(@PathVariable String id, Authentication authentication) {
         Trip trip = tripRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String currentUserId = currentUser.getId();
+
         List<TripResponseDto.TripMemberDto> populatedMembers = new ArrayList<>();
-        for (String userId : trip.getParticipantIds()) {
-            userRepository.findById(userId).ifPresent(user -> {
-                populatedMembers.add(new TripResponseDto.TripMemberDto(
-                        user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()
-                ));
-            });
+        if (trip.getParticipantIds() != null) {
+            for (String userId : trip.getParticipantIds()) {
+                userRepository.findById(userId).ifPresent(user ->
+                        populatedMembers.add(new TripResponseDto.TripMemberDto(
+                                user.getId(), user.getFirstName(), user.getLastName(), user.getAvatarUrl()
+                        ))
+                );
+            }
         }
 
-        // Grab the organizer's details for the detailed view too!
         User org = userRepository.findById(trip.getOrganizerId()).orElse(null);
         TripResponseDto.TripMemberDto organizerDto = null;
         if (org != null) {
@@ -75,12 +87,18 @@ public class TripController {
             );
         }
 
+        // 🌟 ADDED: Calculate Like Metrics for the details page
+        int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
+        boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
+
         TripResponseDto responseDto = new TripResponseDto(
                 trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
                 trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                 trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                 trip.getStatus(),
-                organizerDto, // <-- Added here to match the new DTO!
+                likeCount, // <-- Included here!
+                isLiked,   // <-- Included here!
+                organizerDto,
                 populatedMembers
         );
         return ResponseEntity.ok(responseDto);
@@ -103,12 +121,16 @@ public class TripController {
         List<Trip> allMyTrips = new ArrayList<>();
 
         List<Trip> organized = tripRepository.findByOrganizerId(userId);
-        organized.forEach(t -> t.setIsOrganizer(true));
-        allMyTrips.addAll(organized);
+        if (organized != null) {
+            organized.forEach(t -> t.setIsOrganizer(true));
+            allMyTrips.addAll(organized);
+        }
 
         List<Trip> joined = tripRepository.findByParticipantIdsContaining(userId);
-        joined.forEach(t -> t.setIsOrganizer(false));
-        allMyTrips.addAll(joined);
+        if (joined != null) {
+            joined.forEach(t -> t.setIsOrganizer(false));
+            allMyTrips.addAll(joined);
+        }
 
         return ResponseEntity.ok(allMyTrips);
     }
@@ -134,5 +156,21 @@ public class TripController {
 
         tripService.resolveJoinRequest(tripId, requesterId, status, authentication.getName());
         return ResponseEntity.ok("Request updated to " + status);
+    }
+
+    // 🌟 7. NEW: Toggle Like Endpoint!
+    @PostMapping("/{tripId}/like")
+    public ResponseEntity<String> toggleLike(@PathVariable String tripId, Authentication authentication) {
+        String userEmail = authentication.getName();
+        tripService.toggleLike(tripId, userEmail);
+        return ResponseEntity.ok("Trip like status toggled");
+    }
+
+    // 🌟 8. NEW: Delete Trip Endpoint! (Fixes the 405 Error)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteTrip(@PathVariable String id, Authentication authentication) {
+        String userEmail = authentication.getName();
+        tripService.deleteTrip(id, userEmail);
+        return ResponseEntity.ok("Trip deleted successfully");
     }
 }

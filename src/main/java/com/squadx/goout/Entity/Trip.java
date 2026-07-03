@@ -47,6 +47,9 @@ public class Trip {
     // The Waiting Room
     private List<String> pendingJoinRequests = new ArrayList<>();
 
+    // 🌟 ADDED: List of User IDs who liked this trip
+    private List<String> likedBy = new ArrayList<>();
+
     // 🚨 UPDATED: Default to UPCOMING for the new frontend feed tabs!
     private String status = "UPCOMING";
 

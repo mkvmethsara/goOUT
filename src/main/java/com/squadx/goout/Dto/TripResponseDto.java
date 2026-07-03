@@ -24,11 +24,24 @@ public class TripResponseDto {
     private String organizerId;
     private String status;
 
-    // 🌟 ADDED: The full organizer details for Vishwa's feed!
+    // 🌟 ADDED: Like metrics for the frontend feed!
+    private int likeCount;
+    private boolean isLikedByCurrentUser;
+
+    // The full organizer details for Vishwa's feed!
     private TripMemberDto organizer;
 
     // The fully populated list of members
     private List<TripMemberDto> joinedMembers;
+
+    // 🌟 ADDED: Jackson will automatically serialize these into the JSON response!
+    public String getType() {
+        return "TRIP";
+    }
+
+    public boolean getIsTrip() {
+        return true;
+    }
 
     /**
      * Inner DTO strictly for sending safe user data for the trip members list
