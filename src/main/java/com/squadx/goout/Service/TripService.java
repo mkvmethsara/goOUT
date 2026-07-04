@@ -20,19 +20,15 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
-    // 🗑️ PostRepository removed since we use Trips as the main feed now!
 
-    // 🌟 Fetches global trips with an optional Search Filter!
     public List<TripResponseDto> getGlobalUpcomingFeed(String currentUserEmail, String search) {
 
         User currentUser = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         String currentUserId = currentUser.getId();
 
-        // Fetch ALL public trips (Both UPCOMING and COMPLETED)
         List<Trip> allPublicTrips = tripRepository.findByIsPublicTrue();
 
-        // 🌟 THE FIX: If the frontend sent a search word, filter the list!
         if (search != null && !search.trim().isEmpty()) {
             String searchLower = search.toLowerCase();
             allPublicTrips = allPublicTrips.stream()
@@ -47,7 +43,6 @@ public class TripService {
 
         for (Trip trip : allPublicTrips) {
 
-            // 1. Look up the person who created this trip
             User org = userRepository.findById(trip.getOrganizerId()).orElse(null);
             TripResponseDto.TripMemberDto organizerDto = null;
 
@@ -57,19 +52,17 @@ public class TripService {
                 );
             }
 
-            // 🌟 Calculate the Like metrics!
             int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
             boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
 
-            // 2. Package it all up safely for the frontend
             TripResponseDto dto = new TripResponseDto(
                     trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
                     trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                     trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                     trip.getStatus(),
-                    likeCount, // <-- Included here!
-                    isLiked,   // <-- Included here!
-                    "NONE",    // <-- 🌟 THE FIX: Add a default status for the global feed!
+                    likeCount,
+                    isLiked,
+                    "NONE",
                     organizerDto,
                     new ArrayList<>()
             );
@@ -80,7 +73,6 @@ public class TripService {
         return feed;
     }
 
-    // 🌟 Helper Method: Keeps the main method clean (Fixes IntelliJ Warning)
     private String getSmartAvatar(User org) {
         String avatar = org.getAvatarUrl();
         if (avatar == null || avatar.trim().isEmpty()) {
@@ -105,8 +97,6 @@ public class TripService {
             throw new AccessDeniedException("Only the trip organizer can end this trip!");
         }
 
-        // Just update the status and save.
-        // 🗑️ Memory Post generation logic completely removed to prevent duplicates!
         trip.setStatus("COMPLETED");
         return tripRepository.save(trip);
     }
@@ -118,10 +108,18 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
+        // 🌟 NEW SECURITY FIX: Block requests if the trip is already full!
+        int maxCapacity = (trip.getMaxParticipants() != null) ? trip.getMaxParticipants() : 0;
+        int currentMembers = (trip.getParticipantIds() != null) ? trip.getParticipantIds().size() : 0;
+
+        if (maxCapacity > 0 && currentMembers >= maxCapacity) {
+            throw new RuntimeException("Cannot join: This trip has already reached its maximum capacity of " + maxCapacity + " travelers.");
+        }
+
         if (trip.getOrganizerId().equals(user.getId())) {
             throw new RuntimeException("You are the organizer of this trip!");
         }
-        if (trip.getParticipantIds().contains(user.getId())) {
+        if (trip.getParticipantIds() != null && trip.getParticipantIds().contains(user.getId())) {
             throw new RuntimeException("You are already a participant.");
         }
 
@@ -157,7 +155,6 @@ public class TripService {
                         .map(u -> {
                             String fName = u.getFirstName() != null ? u.getFirstName() : "";
                             String lName = u.getLastName() != null ? u.getLastName() : "";
-                            // 🌟 Fixed to perfectly match the 7 fields in UserSummaryDto
                             return new UserSummaryDto(u.getId(), fName, lName, u.getEmail(), u.getBio(), u.getLocation(), u.getAvatarUrl());
                         })
                         .orElse(null))
@@ -190,13 +187,21 @@ public class TripService {
             if (trip.getParticipantIds() == null) {
                 trip.setParticipantIds(new ArrayList<>());
             }
+
+            // 🌟 NEW SECURITY FIX: Block the organizer from accepting if the trip is full!
+            int maxCapacity = (trip.getMaxParticipants() != null) ? trip.getMaxParticipants() : 0;
+            if (maxCapacity > 0 && trip.getParticipantIds().size() >= maxCapacity) {
+                // If they try to accept, we throw an error and put the user BACK into the waiting room so their request isn't lost!
+                trip.getPendingJoinRequests().add(requesterId);
+                throw new RuntimeException("Cannot accept user: The trip has already reached its maximum capacity of " + maxCapacity + " members.");
+            }
+
             trip.getParticipantIds().add(requesterId);
         }
 
         tripRepository.save(trip);
     }
 
-    // 🌟 ADDED: The logic to Like or Unlike a trip
     public void toggleLike(String tripId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -204,12 +209,10 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        // Failsafe: Ensure the list exists
         if (trip.getLikedBy() == null) {
             trip.setLikedBy(new ArrayList<>());
         }
 
-        // The Toggle Logic: If they already liked it, remove them. Otherwise, add them.
         if (trip.getLikedBy().contains(currentUser.getId())) {
             trip.getLikedBy().remove(currentUser.getId());
         } else {
@@ -219,7 +222,6 @@ public class TripService {
         tripRepository.save(trip);
     }
 
-    // 🌟 ADDED: Delete Trip Logic
     public void deleteTrip(String tripId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -227,7 +229,6 @@ public class TripService {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        // Security check: Only the organizer can delete it!
         if (!trip.getOrganizerId().equals(user.getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Only the trip organizer can delete this trip!");
         }
