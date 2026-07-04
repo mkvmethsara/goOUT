@@ -7,7 +7,6 @@ import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.TripRepository;
 import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.TripService;
-import jakarta.validation.Valid; // 🌟 ADDED: Jakarta Validation Import
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,9 +25,9 @@ public class TripController {
     private final TripService tripService;
     // 🗑️ REMOVED PostRepository because we don't need Auto-Posts anymore!
 
-    // 1. Create a new trip (Cleaned up: No more Auto-Posts)
+    // 1. Create a new trip (REMOVED @Valid so the frontend doesn't get blocked by missing fields!)
     @PostMapping
-    public ResponseEntity<Trip> createTrip(@Valid @RequestBody Trip trip, Authentication authentication) {
+    public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -43,13 +42,13 @@ public class TripController {
             trip.getParticipantIds().add(user.getId());
         }
 
-        // 🌟 THE FIX: We must actually save the trip to MongoDB!
+        // We must actually save the trip to MongoDB!
         Trip savedTrip = tripRepository.save(trip);
 
         return ResponseEntity.ok(savedTrip);
     }
 
-    // 🌟 UPDATED: The Global Feed now takes an optional 'search' parameter!
+    // The Global Feed now takes an optional 'search' parameter!
     @GetMapping
     public ResponseEntity<List<TripResponseDto>> getGlobalUpcomingFeed(
             @RequestParam(required = false) String search,
@@ -96,7 +95,7 @@ public class TripController {
             );
         }
 
-        // 🌟 ADDED: Calculate Like Metrics for the details page
+        // Calculate Like Metrics for the details page
         int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
         boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
 
@@ -115,8 +114,8 @@ public class TripController {
                 trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                 trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                 trip.getStatus(),
-                likeCount, // <-- Included here!
-                isLiked,   // <-- Included here!
+                likeCount,
+                isLiked,
                 userStatus, // <-- 🌟 Included here for the frontend!
                 organizerDto,
                 populatedMembers
@@ -178,7 +177,7 @@ public class TripController {
         return ResponseEntity.ok("Request updated to " + status);
     }
 
-    // 🌟 7. NEW: Toggle Like Endpoint!
+    // 7. Toggle Like Endpoint
     @PostMapping("/{tripId}/like")
     public ResponseEntity<String> toggleLike(@PathVariable String tripId, Authentication authentication) {
         String userEmail = authentication.getName();
@@ -186,7 +185,7 @@ public class TripController {
         return ResponseEntity.ok("Trip like status toggled");
     }
 
-    // 🌟 8. NEW: Delete Trip Endpoint! (Fixes the 405 Error)
+    // 8. Delete Trip Endpoint
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTrip(@PathVariable String id, Authentication authentication) {
         String userEmail = authentication.getName();
