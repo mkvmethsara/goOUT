@@ -69,6 +69,7 @@ public class TripService {
                     trip.getStatus(),
                     likeCount, // <-- Included here!
                     isLiked,   // <-- Included here!
+                    "NONE",    // <-- 🌟 THE FIX: Add a default status for the global feed!
                     organizerDto,
                     new ArrayList<>()
             );
