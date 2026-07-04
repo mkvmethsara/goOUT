@@ -7,7 +7,6 @@ import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.TripRepository;
 import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.TripService;
-import jakarta.validation.Valid; // 🌟 ADDED: Jakarta Validation Import
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,20 +27,12 @@ public class TripController {
 
     // 1. Create a new trip (Cleaned up: No more Auto-Posts)
     @PostMapping
-    public ResponseEntity<Trip> createTrip(@Valid @RequestBody Trip trip, Authentication authentication) {
+    public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         trip.setOrganizerId(user.getId());
-
-        // 🌟 ADDED: Make sure the organizer gets a seat on their own trip! (1/10 members fix)
-        if (trip.getParticipantIds() == null) {
-            trip.setParticipantIds(new ArrayList<>());
-        }
-        if (!trip.getParticipantIds().contains(user.getId())) {
-            trip.getParticipantIds().add(user.getId());
-        }
 
         // 🌟 THE FIX: We must actually save the trip to MongoDB!
         Trip savedTrip = tripRepository.save(trip);
