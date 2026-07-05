@@ -114,9 +114,10 @@ public class TripController {
                 trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                 trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                 trip.getStatus(),
+                trip.getGalleryImages(), // <-- 🌟 THIS IS THE MISSING PIECE!
                 likeCount,
                 isLiked,
-                userStatus, // <-- 🌟 Included here for the frontend!
+                userStatus,
                 organizerDto,
                 populatedMembers
         );
@@ -191,5 +192,28 @@ public class TripController {
         String userEmail = authentication.getName();
         tripService.deleteTrip(id, userEmail);
         return ResponseEntity.ok("Trip deleted successfully");
+    }
+
+    // 🌟 9. NEW: Update Trip Overview (Travel Blog Feature)
+    @PatchMapping("/{tripId}/overview")
+    public ResponseEntity<Trip> updateTripOverview(
+            @PathVariable String tripId,
+            @RequestBody OverviewUpdateRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        Trip updatedTrip = tripService.updateTripOverview(tripId, request.getDescription(), request.getGalleryImages(), userEmail);
+        return ResponseEntity.ok(updatedTrip);
+    }
+
+    // A tiny private DTO just to catch the incoming JSON cleanly
+    static class OverviewUpdateRequest {
+        private String description;
+        private List<String> galleryImages;
+
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public List<String> getGalleryImages() { return galleryImages; }
+        public void setGalleryImages(List<String> galleryImages) { this.galleryImages = galleryImages; }
     }
 }
