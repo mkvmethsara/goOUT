@@ -181,19 +181,14 @@ public class TripController {
         return ResponseEntity.ok("Request updated to " + status);
     }
 
-    // 7. Toggle Like Endpoint
-    @PostMapping("/{tripId}/like")
-    public ResponseEntity<String> toggleLike(@PathVariable String tripId, Authentication authentication) {
-        String userEmail = authentication.getName();
-        tripService.toggleLike(tripId, userEmail);
-        return ResponseEntity.ok("Trip like status toggled");
-    }
+    // 🌟 NEW: Update an existing trip (Edit Feature)
+    @PutMapping("/{tripId}")
+    public ResponseEntity<Trip> updateTrip(
+            @PathVariable String tripId,
+            @RequestBody Trip updatedTripData,
+            Authentication authentication) {
 
-    // 8. Delete Trip Endpoint
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTrip(@PathVariable String id, Authentication authentication) {
-        String userEmail = authentication.getName();
-        tripService.deleteTrip(id, userEmail);
-        return ResponseEntity.ok("Trip deleted successfully");
+        Trip updatedTrip = tripService.updateTrip(tripId, updatedTripData, authentication.getName());
+        return ResponseEntity.ok(updatedTrip);
     }
 }
