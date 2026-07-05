@@ -24,6 +24,9 @@ public class TripResponseDto {
     private String organizerId;
     private String status;
 
+    // 🌟 ADDED: Image Gallery for the Trip Overview Blog
+    private List<String> galleryImages;
+
     // Like metrics for the frontend feed
     private int likeCount;
     private boolean isLikedByCurrentUser;
