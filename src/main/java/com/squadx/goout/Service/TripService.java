@@ -259,6 +259,7 @@ public class TripService {
         if (updatedTripData.getMaxBudget() != null) trip.setMaxBudget(updatedTripData.getMaxBudget());
         if (updatedTripData.getMaxParticipants() != null) trip.setMaxParticipants(updatedTripData.getMaxParticipants());
         if (updatedTripData.getDescription() != null) trip.setDescription(updatedTripData.getDescription());
+        if (updatedTripData.getImageUrl() != null) trip.setImageUrl(updatedTripData.getImageUrl());
 
         return tripRepository.save(trip);
     }
