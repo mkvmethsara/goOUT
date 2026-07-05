@@ -60,6 +60,9 @@ public class Trip {
     // 🌟 ADDED: List of User IDs who liked this trip
     private List<String> likedBy = new ArrayList<>();
 
+    // 🌟 ADDED: Image Gallery for the Trip Overview Blog
+    private List<String> galleryImages = new ArrayList<>();
+
     // 🚨 UPDATED: Default to UPCOMING for the new frontend feed tabs!
     private String status = "UPCOMING";
 
