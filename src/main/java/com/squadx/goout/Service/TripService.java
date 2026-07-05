@@ -60,6 +60,7 @@ public class TripService {
                     trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                     trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                     trip.getStatus(),
+                    trip.getGalleryImages(), // <-- 🌟 CRITICAL FIX: Added this to satisfy the DTO Constructor!
                     likeCount,
                     isLiked,
                     "NONE",
@@ -234,5 +235,29 @@ public class TripService {
         }
 
         tripRepository.delete(trip);
+    }
+
+    // 🌟 ADDED: The logic for updating the travel blog overview
+    public Trip updateTripOverview(String tripId, String description, List<String> galleryImages, String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new RuntimeException("Trip not found"));
+
+        // Security check: Only the organizer can edit the overview!
+        if (!trip.getOrganizerId().equals(user.getId())) {
+            throw new AccessDeniedException("Only the trip organizer can edit the trip overview!");
+        }
+
+        // Apply the updates
+        if (description != null) {
+            trip.setDescription(description);
+        }
+        if (galleryImages != null) {
+            trip.setGalleryImages(galleryImages);
+        }
+
+        return tripRepository.save(trip);
     }
 }
