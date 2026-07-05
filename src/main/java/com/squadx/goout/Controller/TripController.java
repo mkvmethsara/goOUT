@@ -23,9 +23,8 @@ public class TripController {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripService tripService;
-    // 🗑️ REMOVED PostRepository because we don't need Auto-Posts anymore!
 
-    // 1. Create a new trip (REMOVED @Valid so the frontend doesn't get blocked by missing fields!)
+    // 1. Create a new trip
     @PostMapping
     public ResponseEntity<Trip> createTrip(@RequestBody Trip trip, Authentication authentication) {
         String userEmail = authentication.getName();
@@ -34,7 +33,6 @@ public class TripController {
 
         trip.setOrganizerId(user.getId());
 
-        // 🌟 ADDED: Make sure the organizer gets a seat on their own trip! (1/10 members fix)
         if (trip.getParticipantIds() == null) {
             trip.setParticipantIds(new ArrayList<>());
         }
@@ -42,13 +40,11 @@ public class TripController {
             trip.getParticipantIds().add(user.getId());
         }
 
-        // We must actually save the trip to MongoDB!
         Trip savedTrip = tripRepository.save(trip);
-
         return ResponseEntity.ok(savedTrip);
     }
 
-    // The Global Feed now takes an optional 'search' parameter!
+    // Global Feed
     @GetMapping
     public ResponseEntity<List<TripResponseDto>> getGlobalUpcomingFeed(
             @RequestParam(required = false) String search,
@@ -95,11 +91,9 @@ public class TripController {
             );
         }
 
-        // Calculate Like Metrics for the details page
         int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
         boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
 
-        // 🌟 NEW FIX FOR FRONTEND: Calculate Current User Status!
         String userStatus = "NONE";
         if (trip.getOrganizerId() != null && trip.getOrganizerId().equals(currentUserId)) {
             userStatus = "ORGANIZER";
@@ -114,7 +108,7 @@ public class TripController {
                 trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
                 trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
                 trip.getStatus(),
-                trip.getGalleryImages(), // <-- 🌟 THIS IS THE MISSING PIECE!
+                trip.getGalleryImages(),
                 likeCount,
                 isLiked,
                 userStatus,
@@ -130,7 +124,7 @@ public class TripController {
         return ResponseEntity.ok(tripRepository.findByIsPublicTrue());
     }
 
-    // 5. My Trips List
+    // 5. My Trips List (🌟 FIXED THE DUPLICATE LOGIC HERE!)
     @GetMapping("/my-trips")
     public ResponseEntity<List<Trip>> getMyTrips(Authentication authentication) {
         String userEmail = authentication.getName();
@@ -140,16 +134,25 @@ public class TripController {
         String userId = user.getId();
         List<Trip> allMyTrips = new ArrayList<>();
 
+        // 1. Add all trips where the user is the Organizer
         List<Trip> organized = tripRepository.findByOrganizerId(userId);
         if (organized != null) {
-            organized.forEach(t -> t.setIsOrganizer(true));
-            allMyTrips.addAll(organized);
+            organized.forEach(t -> {
+                t.setIsOrganizer(true);
+                allMyTrips.add(t);
+            });
         }
 
+        // 2. Add trips where they are participating, BUT filter out the ones they organize!
         List<Trip> joined = tripRepository.findByParticipantIdsContaining(userId);
         if (joined != null) {
-            joined.forEach(t -> t.setIsOrganizer(false));
-            allMyTrips.addAll(joined);
+            joined.forEach(t -> {
+                // 🌟 THE FIX: Only add it to the 'Joined' list if they are NOT the organizer
+                if (t.getOrganizerId() != null && !t.getOrganizerId().equals(userId)) {
+                    t.setIsOrganizer(false);
+                    allMyTrips.add(t);
+                }
+            });
         }
 
         return ResponseEntity.ok(allMyTrips);
@@ -192,28 +195,5 @@ public class TripController {
         String userEmail = authentication.getName();
         tripService.deleteTrip(id, userEmail);
         return ResponseEntity.ok("Trip deleted successfully");
-    }
-
-    // 🌟 9. NEW: Update Trip Overview (Travel Blog Feature)
-    @PatchMapping("/{tripId}/overview")
-    public ResponseEntity<Trip> updateTripOverview(
-            @PathVariable String tripId,
-            @RequestBody OverviewUpdateRequest request,
-            Authentication authentication) {
-
-        String userEmail = authentication.getName();
-        Trip updatedTrip = tripService.updateTripOverview(tripId, request.getDescription(), request.getGalleryImages(), userEmail);
-        return ResponseEntity.ok(updatedTrip);
-    }
-
-    // A tiny private DTO just to catch the incoming JSON cleanly
-    static class OverviewUpdateRequest {
-        private String description;
-        private List<String> galleryImages;
-
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public List<String> getGalleryImages() { return galleryImages; }
-        public void setGalleryImages(List<String> galleryImages) { this.galleryImages = galleryImages; }
     }
 }
