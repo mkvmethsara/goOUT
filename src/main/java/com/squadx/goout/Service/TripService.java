@@ -237,26 +237,29 @@ public class TripService {
         tripRepository.delete(trip);
     }
 
-    // 🌟 ADDED: The logic for updating the travel blog overview
-    public Trip updateTripOverview(String tripId, String description, List<String> galleryImages, String userEmail) {
+    // 🌟 NEW: The Edit Trip Logic with Security Check
+    public Trip updateTrip(String tripId, Trip updatedTripData, String userEmail) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new RuntimeException("Trip not found"));
 
-        // Security check: Only the organizer can edit the overview!
+        // SECURITY: Only the organizer can edit the trip!
         if (!trip.getOrganizerId().equals(user.getId())) {
-            throw new AccessDeniedException("Only the trip organizer can edit the trip overview!");
+            throw new AccessDeniedException("Only the trip organizer can edit these trip details!");
         }
 
-        // Apply the updates
-        if (description != null) {
-            trip.setDescription(description);
-        }
-        if (galleryImages != null) {
-            trip.setGalleryImages(galleryImages);
-        }
+        // Update the allowed fields if the frontend sent them
+        if (updatedTripData.getTitle() != null) trip.setTitle(updatedTripData.getTitle());
+        if (updatedTripData.getDestinations() != null) trip.setDestinations(updatedTripData.getDestinations());
+        if (updatedTripData.getStartDate() != null) trip.setStartDate(updatedTripData.getStartDate());
+        if (updatedTripData.getEndDate() != null) trip.setEndDate(updatedTripData.getEndDate());
+        if (updatedTripData.getMinBudget() != null) trip.setMinBudget(updatedTripData.getMinBudget());
+        if (updatedTripData.getMaxBudget() != null) trip.setMaxBudget(updatedTripData.getMaxBudget());
+        if (updatedTripData.getMaxParticipants() != null) trip.setMaxParticipants(updatedTripData.getMaxParticipants());
+        if (updatedTripData.getDescription() != null) trip.setDescription(updatedTripData.getDescription());
+        if (updatedTripData.getImageUrl() != null) trip.setImageUrl(updatedTripData.getImageUrl());
 
         return tripRepository.save(trip);
     }

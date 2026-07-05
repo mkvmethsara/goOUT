@@ -5,6 +5,7 @@ import com.squadx.goout.Dto.VerifyRequest;
 import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.JwtService;
+import com.squadx.goout.Service.EmailService; // 🌟 ADDED
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -23,6 +24,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService; // 🌟 ADDED
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody User user) {
@@ -43,12 +45,20 @@ public class AuthController {
         // 3. Save the unverified user
         userRepository.save(user);
 
-        // 4. THE DEV HACK: Print the OTP to the Spring Boot console!
+        // 4. THE FAILSAFE: Always print to the console! (Methsara's Idea 💡)
         System.out.println("\n========================================================");
-        System.out.println("🚨 MOCK EMAIL INTERCEPTED!");
+        System.out.println("🚨 OTP GENERATED (IDE FALLBACK ACTIVE)!");
         System.out.println("📩 TO: " + user.getEmail());
         System.out.println("🔑 OTP CODE: " + generatedOtp);
         System.out.println("========================================================\n");
+
+        // 5. 🌟 NEW: ATTEMPT REAL EMAIL
+        try {
+            emailService.sendOtpEmail(user.getEmail(), generatedOtp);
+            System.out.println("✅ Real email successfully sent to " + user.getEmail());
+        } catch (Exception e) {
+            System.out.println("⚠️ Warning: Real email failed, but OTP is in console. Error: " + e.getMessage());
+        }
 
         // Notice we do NOT return the JWT token here anymore!
         return ResponseEntity.ok("User registered successfully. Please check your email for the OTP.");
