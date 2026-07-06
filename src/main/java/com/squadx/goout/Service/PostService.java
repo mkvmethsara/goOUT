@@ -32,6 +32,49 @@ public class PostService {
         // 3. Save to MongoDB
         return postRepository.save(newPost);
     }
+    // 🌟 NEW: A dedicated, lightweight public feed for the Landing Page
+    public List<PostResponseDto> getPublicTrendingFeed() {
+        // Fetch all posts, sorted newest first
+        List<Post> allPosts = postRepository.findAllByOrderByCreatedAtDesc();
+        List<PostResponseDto> feedResponse = new ArrayList<>();
+
+        // Loop through and map them, but skip the "isLikedByCurrentUser" logic!
+        for (Post post : allPosts) {
+            Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
+
+            String authorName = "Unknown Traveler";
+            String avatarUrl = null;
+
+            if (authorOpt.isPresent()) {
+                User u = authorOpt.get();
+                String fName = u.getFirstName() != null ? u.getFirstName() : "";
+                String lName = u.getLastName() != null ? u.getLastName() : "";
+                String fullName = (fName + " " + lName).trim();
+                if (!fullName.isEmpty()) {
+                    authorName = fullName;
+                }
+                avatarUrl = u.getAvatarUrl();
+            }
+
+            int likeCount = (post.getLikedBy() != null) ? post.getLikedBy().size() : 0;
+
+            PostResponseDto.AuthorDto authorDto = new PostResponseDto.AuthorDto(authorName, avatarUrl);
+
+            // We hardcode isLiked to false since no one is logged in!
+            PostResponseDto dto = new PostResponseDto(
+                    post.getId(),
+                    post.getContent(),
+                    post.getLocation(),
+                    post.getImageUrl(),
+                    post.getCreatedAt(),
+                    likeCount,
+                    false,
+                    authorDto
+            );
+            feedResponse.add(dto);
+        }
+        return feedResponse;
+    }
 
     // UPDATED: We now accept the current user's email so we can calculate 'isLikedByCurrentUser'
     public List<PostResponseDto> getFeed(String currentUserEmail) {
