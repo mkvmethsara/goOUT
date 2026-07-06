@@ -32,11 +32,11 @@ public class PostController {
         return ResponseEntity.ok(feedResponse);
     }
 
-    // ADDED: The Toggle Like Endpoint
+    // 🌟 UPGRADED: The Toggle Like Endpoint now returns the LikeResponseDto
     @PostMapping("/{postId}/like")
-    public ResponseEntity<String> toggleLike(@PathVariable String postId, Authentication authentication) {
+    public ResponseEntity<com.squadx.goout.Dto.LikeResponseDto> toggleLike(@PathVariable String postId, Authentication authentication) {
         String userEmail = authentication.getName();
-        postService.toggleLike(postId, userEmail);
-        return ResponseEntity.ok("Post like status toggled");
+        com.squadx.goout.Dto.LikeResponseDto response = postService.toggleLike(postId, userEmail);
+        return ResponseEntity.ok(response);
     }
 }
