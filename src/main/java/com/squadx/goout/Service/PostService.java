@@ -89,7 +89,7 @@ public class PostService {
     }
 
     // ADDED: The logic to Like or Unlike a post
-    public void toggleLike(String postId, String userEmail) {
+    public com.squadx.goout.Dto.LikeResponseDto toggleLike(String postId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -101,13 +101,19 @@ public class PostService {
             post.setLikedBy(new ArrayList<>());
         }
 
+        boolean isNowLiked;
         // The Toggle Logic: If they already liked it, remove them. Otherwise, add them.
         if (post.getLikedBy().contains(currentUser.getId())) {
             post.getLikedBy().remove(currentUser.getId());
+            isNowLiked = false;
         } else {
             post.getLikedBy().add(currentUser.getId());
+            isNowLiked = true;
         }
 
         postRepository.save(post);
+
+        // Return the exact numbers to the frontend!
+        return new com.squadx.goout.Dto.LikeResponseDto(true, isNowLiked, post.getLikedBy().size());
     }
 }

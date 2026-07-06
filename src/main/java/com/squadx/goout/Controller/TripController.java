@@ -191,4 +191,10 @@ public class TripController {
         Trip updatedTrip = tripService.updateTrip(tripId, updatedTripData, authentication.getName());
         return ResponseEntity.ok(updatedTrip);
     }
+    // 🌟 ADDED: Toggle Like Endpoint for Trips
+    @PostMapping("/{tripId}/like")
+    public ResponseEntity<com.squadx.goout.Dto.LikeResponseDto> toggleTripLike(@PathVariable String tripId, Authentication authentication) {
+        com.squadx.goout.Dto.LikeResponseDto response = tripService.toggleLike(tripId, authentication.getName());
+        return ResponseEntity.ok(response);
+    }
 }

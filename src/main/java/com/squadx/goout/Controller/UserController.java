@@ -1,15 +1,15 @@
 package com.squadx.goout.Controller;
 
 import com.squadx.goout.Dto.UserProfileUpdateDto;
+import com.squadx.goout.Dto.ChangePasswordRequest; // 🌟 ADDED
 import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.UserRepository;
+import com.squadx.goout.Repository.TripRepository; // 🌟 ADDED
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.security.crypto.password.PasswordEncoder; // 🌟 ADDED
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder; // 🌟 ADDED to hash passwords
+    private final TripRepository tripRepository;   // 🌟 ADDED for cascading deletes
 
     /**
      * Endpoint: GET /api/v1/users/me
@@ -75,5 +77,44 @@ public class UserController {
         currentUser.setPassword(null);
 
         return ResponseEntity.ok(currentUser);
+    }
+
+    // 🌟 NEW: Change Password Endpoint
+    @PutMapping("/me/password")
+    public ResponseEntity<String> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 1. Verify the old password matches what is in the database
+        if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
+            // Returns a 400 Bad Request if the old password was wrong
+            return ResponseEntity.badRequest().body("Incorrect current password.");
+        }
+
+        // 2. Hash the new password and save it
+        currentUser.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(currentUser);
+
+        return ResponseEntity.ok("Password updated successfully.");
+    }
+
+    // 🌟 NEW: Delete Account Endpoint
+    @DeleteMapping("/me")
+    public ResponseEntity<String> deleteAccount(Authentication authentication) {
+        String userEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 🧹 CASCADING DELETE: Prevent "Ghost Trips" by deleting trips this user organized
+        tripRepository.deleteAll(tripRepository.findByOrganizerId(currentUser.getId()));
+
+        // Finally, delete the user themselves
+        userRepository.delete(currentUser);
+
+        return ResponseEntity.ok("Account and associated data permanently deleted.");
     }
 }
