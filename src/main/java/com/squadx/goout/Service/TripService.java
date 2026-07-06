@@ -263,4 +263,91 @@ public class TripService {
 
         return tripRepository.save(trip);
     }
+
+    // 🌟 UPGRADE: Returns My Trips as rich DTOs (fixes Like buttons & avatars)
+    public List<TripResponseDto> getMyTripsFeed(String currentUserEmail) {
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String currentUserId = currentUser.getId();
+
+        List<Trip> organized = tripRepository.findByOrganizerId(currentUserId);
+        List<Trip> joined = tripRepository.findByParticipantIdsContaining(currentUserId);
+
+        List<Trip> allMyTrips = new ArrayList<>(organized);
+        allMyTrips.addAll(joined);
+
+        List<TripResponseDto> feed = new ArrayList<>();
+        for (Trip trip : allMyTrips) {
+            User org = userRepository.findById(trip.getOrganizerId()).orElse(null);
+            TripResponseDto.TripMemberDto organizerDto = null;
+            if (org != null) {
+                organizerDto = new TripResponseDto.TripMemberDto(
+                        org.getId(), org.getFirstName(), org.getLastName(), getSmartAvatar(org)
+                );
+            }
+
+            int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
+            boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
+
+            String status = trip.getOrganizerId().equals(currentUserId) ? "ORGANIZER" : "APPROVED";
+
+            TripResponseDto dto = new TripResponseDto(
+                    trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
+                    trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
+                    trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
+                    trip.getStatus(),
+                    trip.getGalleryImages(),
+                    likeCount,
+                    isLiked,
+                    status,
+                    organizerDto,
+                    new ArrayList<>()
+            );
+            feed.add(dto);
+        }
+        return feed;
+    }
+
+    // 🌟 UPGRADE: Returns Public Trips as rich DTOs (fixes Like buttons & avatars)
+    public List<TripResponseDto> getPublicTripsFeed(String currentUserEmail) {
+        User currentUser = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String currentUserId = currentUser.getId();
+
+        List<Trip> publicTrips = tripRepository.findByIsPublicTrue();
+        List<TripResponseDto> feed = new ArrayList<>();
+
+        for (Trip trip : publicTrips) {
+            User org = userRepository.findById(trip.getOrganizerId()).orElse(null);
+            TripResponseDto.TripMemberDto organizerDto = null;
+            if (org != null) {
+                organizerDto = new TripResponseDto.TripMemberDto(
+                        org.getId(), org.getFirstName(), org.getLastName(), getSmartAvatar(org)
+                );
+            }
+
+            int likeCount = (trip.getLikedBy() != null) ? trip.getLikedBy().size() : 0;
+            boolean isLiked = (trip.getLikedBy() != null) && trip.getLikedBy().contains(currentUserId);
+
+            String status = "NONE";
+            if (trip.getOrganizerId().equals(currentUserId)) status = "ORGANIZER";
+            else if (trip.getParticipantIds() != null && trip.getParticipantIds().contains(currentUserId)) status = "APPROVED";
+            else if (trip.getPendingJoinRequests() != null && trip.getPendingJoinRequests().contains(currentUserId)) status = "PENDING";
+
+            TripResponseDto dto = new TripResponseDto(
+                    trip.getId(), trip.getTitle(), trip.getDescription(), trip.getDestinations(),
+                    trip.getImageUrl(), trip.getStartDate(), trip.getEndDate(), trip.getMinBudget(),
+                    trip.getMaxBudget(), trip.getMaxParticipants(), trip.getOrganizerId(),
+                    trip.getStatus(),
+                    trip.getGalleryImages(),
+                    likeCount,
+                    isLiked,
+                    status,
+                    organizerDto,
+                    new ArrayList<>()
+            );
+            feed.add(dto);
+        }
+        return feed;
+    }
 }
