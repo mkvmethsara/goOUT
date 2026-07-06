@@ -203,7 +203,8 @@ public class TripService {
         tripRepository.save(trip);
     }
 
-    public void toggleLike(String tripId, String userEmail) {
+    // 🌟 UPGRADE: Return the new LikeResponseDto instead of void
+    public com.squadx.goout.Dto.LikeResponseDto toggleLike(String tripId, String userEmail) {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -214,13 +215,19 @@ public class TripService {
             trip.setLikedBy(new ArrayList<>());
         }
 
+        boolean isNowLiked;
         if (trip.getLikedBy().contains(currentUser.getId())) {
             trip.getLikedBy().remove(currentUser.getId());
+            isNowLiked = false;
         } else {
             trip.getLikedBy().add(currentUser.getId());
+            isNowLiked = true;
         }
 
         tripRepository.save(trip);
+
+        // Return the exact numbers to the frontend!
+        return new com.squadx.goout.Dto.LikeResponseDto(true, isNowLiked, trip.getLikedBy().size());
     }
 
     public void deleteTrip(String tripId, String userEmail) {
