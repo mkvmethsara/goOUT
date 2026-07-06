@@ -28,11 +28,10 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
 
                 .authorizeHttpRequests(auth -> auth
-                        // ADDED: Allow browser preflight OPTIONS requests so CORS doesn't block the frontend!
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // FIXED: We added "/error" so Spring Boot can show us bad request messages!
-                        .requestMatchers("/api/v1/auth/**", "/error").permitAll()
+                        // 🌟 THE FIX: We added the new /public/trending endpoint so the Landing Page can access it freely!
+                        .requestMatchers("/api/v1/auth/**", "/error", "/uploads/**", "/api/v1/posts/public/trending").permitAll()
                         .anyRequest().authenticated()
                 )
 
