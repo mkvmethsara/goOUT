@@ -32,6 +32,7 @@ public class PostService {
         // 3. Save to MongoDB
         return postRepository.save(newPost);
     }
+
     // 🌟 NEW: A dedicated, lightweight public feed for the Landing Page
     public List<PostResponseDto> getPublicTrendingFeed() {
         // Fetch all posts, sorted newest first
@@ -40,22 +41,28 @@ public class PostService {
 
         // Loop through and map them, but skip the "isLikedByCurrentUser" logic!
         for (Post post : allPosts) {
-            Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
 
+            // 🌟 1. BULLETPROOF NULL-CHECK: The Author
+            // If the user who made the post was deleted, default to "Unknown Traveler"
             String authorName = "Unknown Traveler";
             String avatarUrl = null;
 
-            if (authorOpt.isPresent()) {
-                User u = authorOpt.get();
-                String fName = u.getFirstName() != null ? u.getFirstName() : "";
-                String lName = u.getLastName() != null ? u.getLastName() : "";
-                String fullName = (fName + " " + lName).trim();
-                if (!fullName.isEmpty()) {
-                    authorName = fullName;
+            if (post.getAuthorId() != null) {
+                Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
+                if (authorOpt.isPresent()) {
+                    User u = authorOpt.get();
+                    String fName = u.getFirstName() != null ? u.getFirstName() : "";
+                    String lName = u.getLastName() != null ? u.getLastName() : "";
+                    String fullName = (fName + " " + lName).trim();
+                    if (!fullName.isEmpty()) {
+                        authorName = fullName;
+                    }
+                    avatarUrl = u.getAvatarUrl();
                 }
-                avatarUrl = u.getAvatarUrl();
             }
 
+            // 🌟 2. BULLETPROOF NULL-CHECK: The Like Array
+            // If 'likedBy' is null, it safely defaults to 0.
             int likeCount = (post.getLikedBy() != null) ? post.getLikedBy().size() : 0;
 
             PostResponseDto.AuthorDto authorDto = new PostResponseDto.AuthorDto(authorName, avatarUrl);
@@ -71,7 +78,13 @@ public class PostService {
                     false,
                     authorDto
             );
+
             feedResponse.add(dto);
+
+            // 🌟 BONUS: Limit to the top 3 posts for the "Trending" Landing Page!
+            if (feedResponse.size() >= 3) {
+                break;
+            }
         }
         return feedResponse;
     }
@@ -90,22 +103,23 @@ public class PostService {
 
         // 2. Loop through every post and attach the Author's details and Like details
         for (Post post : allPosts) {
-            Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
 
             String authorName = "Unknown Traveler";
             String avatarUrl = null;
 
-            if (authorOpt.isPresent()) {
-                User u = authorOpt.get();
+            if (post.getAuthorId() != null) {
+                Optional<User> authorOpt = userRepository.findById(post.getAuthorId());
+                if (authorOpt.isPresent()) {
+                    User u = authorOpt.get();
+                    String fName = u.getFirstName() != null ? u.getFirstName() : "";
+                    String lName = u.getLastName() != null ? u.getLastName() : "";
+                    String fullName = (fName + " " + lName).trim();
 
-                String fName = u.getFirstName() != null ? u.getFirstName() : "";
-                String lName = u.getLastName() != null ? u.getLastName() : "";
-                String fullName = (fName + " " + lName).trim();
-
-                if (!fullName.isEmpty()) {
-                    authorName = fullName;
+                    if (!fullName.isEmpty()) {
+                        authorName = fullName;
+                    }
+                    avatarUrl = u.getAvatarUrl();
                 }
-                avatarUrl = u.getAvatarUrl();
             }
 
             // ADDED: Calculate the Like metrics!
