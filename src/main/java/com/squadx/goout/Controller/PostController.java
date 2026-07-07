@@ -23,6 +23,12 @@ public class PostController {
         Post savedPost = postService.createPost(newPost, userEmail);
         return ResponseEntity.ok(savedPost);
     }
+    // 🌟 NEW: The Public Endpoint for the Landing Page (No Auth Required)
+    @GetMapping("/public/trending")
+    public ResponseEntity<List<PostResponseDto>> getPublicTrendingFeed() {
+        List<PostResponseDto> feedResponse = postService.getPublicTrendingFeed();
+        return ResponseEntity.ok(feedResponse);
+    }
 
     // UPDATED: Now requires Authentication so we know who is asking for the feed!
     @GetMapping

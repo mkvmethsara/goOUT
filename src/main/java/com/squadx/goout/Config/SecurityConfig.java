@@ -28,11 +28,13 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
 
                 .authorizeHttpRequests(auth -> auth
-                        // ADDED: Allow browser preflight OPTIONS requests so CORS doesn't block the frontend!
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        // Keep your Auth endpoints public
+                        .requestMatchers("/api/v1/auth/**").permitAll()
 
-                        // FIXED: We added "/error" so Spring Boot can show us bad request messages!
-                        .requestMatchers("/api/v1/auth/**", "/error").permitAll()
+                        // 🌟 THE FIX: Whitelist the new Trips trending endpoint so the Landing Page works!
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/trips/public/trending").permitAll()
+
+                        // Everything else requires a valid JWT Token
                         .anyRequest().authenticated()
                 )
 
