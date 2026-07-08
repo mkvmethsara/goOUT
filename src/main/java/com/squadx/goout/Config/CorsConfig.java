@@ -13,10 +13,15 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // This tells Spring Boot to allow Vishwa's Vite server to bypass the security block
+                // This tells Spring Boot to allow Vishwa's Vite server AND the live Vercel URL
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH") // <-- ADDED "PATCH" HERE
+                        .allowedOrigins(
+                                "http://localhost:5173",
+                                "http://localhost:5174",
+                                "http://localhost:5175",
+                                "https://go-out-frontend.vercel.app" // <-- 🌟 THE FIX: ADD VERCEL HERE!
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
