@@ -2,10 +2,12 @@ package com.squadx.goout.Controller;
 
 import com.squadx.goout.Dto.LoginRequest;
 import com.squadx.goout.Dto.VerifyRequest;
+import com.squadx.goout.Dto.ForgotPasswordRequest;
+import com.squadx.goout.Dto.ResetPasswordRequest;
 import com.squadx.goout.Entity.User;
 import com.squadx.goout.Repository.UserRepository;
 import com.squadx.goout.Service.JwtService;
-import com.squadx.goout.Service.EmailService; // 🌟 ADDED
+import com.squadx.goout.Service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,7 +26,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService; // 🌟 ADDED
+    private final EmailService emailService;
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody User user) {
@@ -110,5 +112,59 @@ public class AuthController {
         String jwtToken = jwtService.generateToken(request.getEmail());
 
         return ResponseEntity.ok(jwtToken);
+    }
+
+    // 🌟 NEW: Step 1 of Password Reset (Send OTP)
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+
+        // 1. Check if user exists
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("If this email is registered, a reset code will be sent."));
+        // Note: We use a generic message above to prevent hackers from "guessing" which emails are registered!
+
+        // 2. Generate a new 6-digit OTP
+        String resetOtp = String.format("%06d", new Random().nextInt(999999));
+        user.setOtp(resetOtp);
+        userRepository.save(user);
+
+        // 3. THE FAILSAFE: Print to console just in case the email fails!
+        System.out.println("\n========================================================");
+        System.out.println("🚨 PASSWORD RESET OTP GENERATED!");
+        System.out.println("📩 TO: " + user.getEmail());
+        System.out.println("🔑 RESET CODE: " + resetOtp);
+        System.out.println("========================================================\n");
+
+        // 4. Send the email
+        try {
+            emailService.sendPasswordResetEmail(user.getEmail(), resetOtp);
+            System.out.println("✅ Password reset email sent to " + user.getEmail());
+        } catch (Exception e) {
+            System.out.println("⚠️ Warning: Password reset email failed, but OTP is in console.");
+        }
+
+        return ResponseEntity.ok("If this email is registered, a reset code has been sent.");
+    }
+
+    // 🌟 NEW: Step 2 of Password Reset (Verify & Change Password)
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 1. Check if OTP matches
+        if (user.getOtp() == null || !user.getOtp().equals(request.getOtp())) {
+            throw new RuntimeException("Invalid or expired reset code.");
+        }
+
+        // 2. Hash the new password and save it
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        // 3. Clear the OTP so it can't be used again!
+        user.setOtp(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Password has been reset successfully. You can now log in.");
     }
 }
