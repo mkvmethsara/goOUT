@@ -49,16 +49,39 @@ public class ExpenseService {
         }
 
         int totalTravelers = trip.getParticipantIds().size();
+        // Prevent division by zero if it's just the organizer!
         if (totalTravelers == 0) {
             totalTravelers = 1;
         }
 
         double perPerson = totalExpenses / totalTravelers;
 
+        // 🌟 NEW: Calculate the Budget Health Status!
+        String budgetStatus = "UNKNOWN";
+        double estimatedBudget = (trip.getMinBudget() != null) ? trip.getMinBudget() : 0.0;
+
+        if (estimatedBudget > 0) {
+            // Calculate what percentage of the budget has been spent
+            double percentSpent = (totalExpenses / estimatedBudget) * 100;
+
+            if (percentSpent > 100) {
+                budgetStatus = "OVER_BUDGET";
+            } else if (percentSpent > 85) {
+                // If they have spent more than 85%, warn them they are getting close!
+                budgetStatus = "ON_TRACK_WARNING";
+            } else {
+                budgetStatus = "UNDER_BUDGET";
+            }
+        }
+
         Map<String, Object> dashboardData = new HashMap<>();
         dashboardData.put("totalExpenses", totalExpenses);
         dashboardData.put("perPerson", perPerson);
         dashboardData.put("totalTravelers", totalTravelers);
+
+        // Include the new math in the response!
+        dashboardData.put("estimatedBudget", estimatedBudget);
+        dashboardData.put("budgetStatus", budgetStatus);
 
         return dashboardData;
     }

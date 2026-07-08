@@ -28,4 +28,22 @@ public class EmailService {
         // This will attempt to send the email across the internet
         mailSender.send(message);
     }
+
+    // 🌟 NEW: Password Reset Email Template
+    public void sendPasswordResetEmail(String toEmail, String otp) {
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setFrom("goout.squadx@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("🌍 GoOUT - Password Reset Request");
+
+        message.setText("Hello Traveler,\n\n" +
+                "We received a request to reset the password for your GoOUT account. " +
+                "Please use the following 6-digit code to create a new password:\n\n" +
+                "🔑 Reset Code: " + otp + "\n\n" +
+                "If you did not request this, please ignore this email. Your account is safe.\n\n" +
+                "- The GoOUT Team");
+
+        mailSender.send(message);
+    }
 }
