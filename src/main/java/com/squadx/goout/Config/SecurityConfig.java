@@ -31,8 +31,8 @@ public class SecurityConfig {
                         // Keep your Auth endpoints public
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
-                        // 🌟 THE FIX: Whitelist the new Trips trending endpoint so the Landing Page works!
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/trips/public/trending").permitAll()
+                        // 🌟 THE FIX: The frontend was right! Changed 'trips' to 'posts'
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/posts/public/trending").permitAll()
 
                         // Everything else requires a valid JWT Token
                         .anyRequest().authenticated()
